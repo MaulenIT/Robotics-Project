@@ -1,44 +1,45 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-print('Enter x: ')
-x0 = input()
-print('Enter Y: ')
-y0 = input()
-print('Enter theta0: ')
-theta0 = input()
+mu_0 = np.array([0, 0, 0])
+Sigma_0 = np.eye(3)
 
-
-
-# Parameters
-v = 0.3
-omega = 0.0
 dt = 0.1
-t_end = 10
+V_k = 1.0
+omega_k = 0.1
+Q_x = np.eye(3) * 0.1
 
-t = np.arange(0, t_end, dt)
+def compute_H_k(mu_theta_k_minus_1):
+    theta_k_minus_1 = mu_theta_k_minus_1[2]
+    H_k = np.array([
+        [1, 0, -dt * V_k * np.sin(theta_k_minus_1)],
+        [0, 1, dt * V_k * np.cos(theta_k_minus_1)],
+        [0, 0, 1]
+    ])
+    return H_k
 
-x = np.zeros_like(t)
-y = np.zeros_like(t)
-theta = np.zeros_like(t)
+mu_k = mu_0
+Sigma_k = Sigma_0
 
-x[0], y[0], theta[0] = x0, y0, theta0
+x_trajectory = [mu_0[0]]
+y_trajectory = [mu_0[1]]
 
-for i in range(1, len(t)):
-    theta[i] = theta0
+for k in range(1, 100):
+    H_k = compute_H_k(mu_k)
 
-    x[i] = x[i - 1] + v * np.cos(theta[i - 1]) * dt
-    y[i] = y[i - 1] + v * np.sin(theta[i - 1]) * dt
+    Sigma_k = H_k @ Sigma_k @ H_k.T + Q_x
 
-plt.figure(figsize=(12, 6))
-plt.plot(x, y, label='Robot Path')
-plt.plot(x[0], y[0], 'go', label='Start')
-plt.plot(x[-1], y[-1], 'ro', label='End')
-plt.quiver(x[::5], y[::5], np.cos(theta[::5]), np.sin(theta[::5]), scale=20)
-plt.title('Robot Trajectory with Zero Angular Velocity')
-plt.xlabel('X Position (m)')
-plt.ylabel('Y Position (m)')
+    mu_k = np.array([mu_k[0] + dt * V_k * np.cos(mu_k[2]),
+                     mu_k[1] + dt * V_k * np.sin(mu_k[2]),
+                     mu_k[2] + dt * omega_k])
+
+    x_trajectory.append(mu_k[0])
+    y_trajectory.append(mu_k[1])
+
+plt.plot(x_trajectory, y_trajectory, label='Траектория движения робота')
+plt.xlabel('X')
+plt.ylabel('Y')
+plt.title('Траектория движения робота')
 plt.legend()
 plt.grid(True)
-plt.axis('equal')
 plt.show()
